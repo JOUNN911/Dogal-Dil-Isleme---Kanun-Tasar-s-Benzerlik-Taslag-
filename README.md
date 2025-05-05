@@ -7,3 +7,5 @@
    - nltk Kütüphanesi
    - Pandas Kütüphanesi
    - Gensim Kütüphanesi
+4. Örnek olarak Gazeteler klasöründe bazı .txt dosyaları mevcut. kodu çalıştırarak neler yapabilidiğini öğrenebilirsiniz.
+5. Gazeteler klasörü dosyalar değişmeden 5-10 saniye aralığında işlemeye başlıyor ve yaklaşık 15 saniye içerisinde işlemeyi tamamlıyor.
