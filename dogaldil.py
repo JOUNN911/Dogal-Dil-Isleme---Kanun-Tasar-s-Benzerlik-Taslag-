@@ -9,24 +9,20 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 
-# NLTK verilerini indir
 nltk.download('punkt')
 nltk.download('wordnet')
 nltk.download('stopwords')
 
-# Klasör yapısını oluştur
 os.makedirs("word2vec_models/lemmatized", exist_ok=True)
 os.makedirs("word2vec_models/stemmed", exist_ok=True)
 os.makedirs("zipf_analizi", exist_ok=True)
 os.makedirs("temizlenmis_veriler", exist_ok=True)
 os.makedirs("processed_data", exist_ok=True)
 
-# NLP araçları
 stemmer = SnowballStemmer("english")
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
-# Veri dosyaları
 txt_files = [
     "gazeteler/20250403.txt",
     "gazeteler/20250404.txt",
@@ -41,18 +37,14 @@ txt_files = [
     "gazeteler/20250413.txt",
 ]
 
-
 def clean_text(text):
-    """Temel metin temizleme fonksiyonu"""
     text = text.lower()
     text = re.sub(r'[^\w\s]', ' ', text)
     text = re.sub(r'\d+', ' ', text)
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-
 def save_removed_items(removed_items):
-    """Çıkarılan öğeleri kaydet"""
     with open("temizlenmis_veriler/removed_items.txt", 'w', encoding='utf-8') as f:
         f.write("=== Çıkarılan Noktalama İşaretleri ===\n")
         f.write(', '.join(removed_items['punctuation']) + "\n\n")
@@ -61,17 +53,13 @@ def save_removed_items(removed_items):
         f.write("=== Çıkarılan Stopwords ===\n")
         f.write(', '.join(removed_items['stopwords']) + "\n")
 
-
 def apply_zipfs_law(words, output_name, output_prefix):
-    """Zipf yasası analizi uygula ve CSV'ye ekle"""
     word_counts = Counter(words)
     most_common = word_counts.most_common(1000)
 
-    # Zipf verilerini DataFrame'e çevir
     zipf_df = pd.DataFrame(most_common, columns=['word', 'frequency'])
     zipf_df['rank'] = zipf_df['frequency'].rank(ascending=False, method='min')
 
-    # Zipf grafiği oluştur
     ranks = np.arange(1, len(most_common) + 1)
     frequencies = [count for word, count in most_common]
 
@@ -86,9 +74,7 @@ def apply_zipfs_law(words, output_name, output_prefix):
 
     return zipf_df
 
-
 def process_and_save_data():
-    """Tüm verileri işle ve kaydet"""
     all_lemmatized = []
     all_stemmed = []
     all_words = []
@@ -104,7 +90,6 @@ def process_and_save_data():
                 text = f.read()
                 cleaned_text = clean_text(text)
 
-                # Çıkarılan öğeleri topla
                 removed_items['punctuation'].update(re.findall(r'[^\w\s]', text.lower()))
                 removed_items['numbers'].update(re.findall(r'\d+', text))
 
@@ -112,11 +97,9 @@ def process_and_save_data():
                 removed_stopwords = [word for word in words if word in stop_words]
                 removed_items['stopwords'].update(removed_stopwords)
 
-                # Stopwords'leri kaldır
                 filtered_words = [word for word in words if word not in stop_words]
                 all_words.extend(filtered_words)
 
-                # Lemmatization ve Stemming uygula
                 all_lemmatized.extend([lemmatizer.lemmatize(word) for word in filtered_words])
                 all_stemmed.extend([stemmer.stem(word) for word in filtered_words])
 
@@ -124,14 +107,11 @@ def process_and_save_data():
         except Exception as e:
             print(f"Hata! {txt_file}: {str(e)}")
 
-    # Çıkarılan öğeleri kaydet
     save_removed_items(removed_items)
 
-    # Zipf analizlerini yap ve CSV'lere ekle
     lemmatized_zipf = apply_zipfs_law(all_lemmatized, "Lemmatization", "lemmatized")
     stemmed_zipf = apply_zipfs_law(all_stemmed, "Stemming", "stemmed")
 
-    # Nihai CSV'leri oluştur
     lemmatized_df = pd.DataFrame({
         'word': all_lemmatized,
         'frequency': [all_lemmatized.count(word) for word in all_lemmatized],
@@ -144,17 +124,13 @@ def process_and_save_data():
         'rank': stemmed_zipf.set_index('word')['rank'].reindex(all_stemmed).values
     })
 
-    # CSV'leri kaydet
     lemmatized_df.to_csv("processed_data/Lemmatization.csv", index=False, encoding='utf-8')
     stemmed_df.to_csv("processed_data/Stemming.csv", index=False, encoding='utf-8')
 
-    # Genel Zipf analizi
     apply_zipfs_law(all_words, "tum_metinler", "genel")
 
     return all_lemmatized, all_stemmed
 
-
-# Parametre setleri
 param_sets = [
     {'algo': 'cbow', 'window': 2, 'dim': 100},
     {'algo': 'skipgram', 'window': 2, 'dim': 100},
@@ -165,7 +141,6 @@ param_sets = [
     {'algo': 'cbow', 'window': 4, 'dim': 300},
     {'algo': 'skipgram', 'window': 4, 'dim': 300}
 ]
-
 
 def train_word2vec(sentences, params, model_type):
     model = Word2Vec(
@@ -184,7 +159,6 @@ def train_word2vec(sentences, params, model_type):
     model.save(save_path)
     print(f"Model kaydedildi: {save_path}")
     return model
-
 
 def main():
     print("Veri yükleme ve ön işleme başlıyor...")
@@ -205,7 +179,6 @@ def main():
     print("- temizlenmis_veriler/: Çıkarılan öğelerin kaydı")
     print("- processed_data/Lemmatization.csv: Lemmatized kelimeler (frekans ve rank bilgileriyle)")
     print("- processed_data/Stemming.csv: Stemmed kelimeler (frekans ve rank bilgileriyle)")
-
 
 if __name__ == "__main__":
     main()
